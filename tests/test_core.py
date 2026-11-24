@@ -9,6 +9,9 @@ class WorkflowTests(unittest.TestCase):
         self.assertEqual(result["count"],1)
         self.assertIn("ted.europa.eu",result["opportunities"][0]["source_url"])
         self.assertIn("FT~",request.call_args.kwargs["payload"]["query"])
+        self.assertIn("publication-date>=",request.call_args.kwargs["payload"]["query"])
+        self.assertIn("SORT BY publication-date DESC",request.call_args.kwargs["payload"]["query"])
+        self.assertRegex(result["published_since"],r"^20\d{6}$")
     @patch("core.request_json")
     def test_osm(self, request):
         request.return_value={"elements":[{"type":"node","id":123,"lat":6.9,"lon":79.8,"tags":{"name":"Community A","amenity":"community_centre"}}]}
