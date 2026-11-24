@@ -35,6 +35,12 @@ a{color:#f7b6db}
 <script>
 const services=__SERVICES__, selector=document.getElementById('service');
 services.forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=s;selector.append(o)});
+const selection=new URLSearchParams(window.location.search).get('service');
+if(services.includes(selection))selector.value=selection;
+const input=document.getElementById('query');
+const examples={TenderPilot:'software',ZeroWaste:'6.9271,79.8612',GrantScout:'research',AccessMap:'6.9271,79.8612',RecallRadar:'food:cheese',TradeBridge:'LK,IN',ResearchGuard:'machine learning',EarthWatch:'earthquake'};
+function hint(){input.placeholder='Example: '+(examples[selector.value]||'search topic')}
+selector.addEventListener('change',hint);hint();
 const form=document.getElementById('form'),go=document.getElementById('go'),status=document.getElementById('status'),view=document.getElementById('result');
 form.addEventListener('submit',async ev=>{ev.preventDefault();go.disabled=true;status.textContent='Retrieving public source data and preparing report…';view.textContent='';
 try{const params=new URLSearchParams({service:selector.value,query:document.getElementById('query').value});const response=await fetch('/api?'+params);const data=await response.json();view.textContent=JSON.stringify(data,null,2);status.textContent=response.ok?'Report ready · inspect original sources':'Source error · check API availability';}

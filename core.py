@@ -1,6 +1,7 @@
 """Two source-grounded pipelines: EU tender discovery and OSM community leads."""
 from __future__ import annotations
 import re
+from datetime import datetime, timedelta, timezone
 from transport import request_json, SourceError
 
 SERVICES = ["TenderPilot","ZeroWaste"]
@@ -21,7 +22,9 @@ def tenders(keyword: str):
         raise ValueError("Tender keyword must be 2–100 letters, numbers, spaces or punctuation.")
     # Source Agent: bounded expert query, with user input sanitized to prevent query injection.
     phrase=keyword.strip().replace('"',"")
-    payload={"query":'FT~("'+phrase+'")',"fields":["publication-number","notice-title","buyer-name","publication-date"],
+    published_since=(datetime.now(timezone.utc)-timedelta(days=180)).strftime("%Y%m%d")
+    expert_query='FT~("'+phrase+'") AND publication-date>='+published_since+' SORT BY publication-date DESC'
+    payload={"query":expert_query,"fields":["publication-number","notice-title","buyer-name","publication-date"],
              "limit":10,"page":1}
     data=request_json(TED,payload=payload)
     hits=data.get("notices", data.get("results", []))
@@ -38,9 +41,9 @@ def tenders(keyword: str):
                      "buyer":_text(item.get("buyer-name")),
                      "published":_text(item.get("publication-date")),
                      "source_url":"https://ted.europa.eu/en/notice/"+number})
-    return {"project":"TenderPilot","keyword":keyword,"count":len(rows),"opportunities":rows,
+    return {"project":"TenderPilot","keyword":keyword,"published_since":published_since,"count":len(rows),"opportunities":rows,
         "source":TED,"stages":["Discovery: TED search","Analysis: normalize buyer/title","Verification: publication identifier","Report: candidate shortlist"],
-        "limitations":["Not checked for eligibility, deadline or procurement compliance.","Read the complete official notice before bidding.","Coverage: EU TED only, not Sri Lankan procurement."]}
+        "limitations":["Recent publication does not mean a notice is still open for bids.","Not checked for eligibility, deadline or procurement compliance.","Read the complete official notice before bidding.","Coverage: EU TED only, not Sri Lankan procurement."]}
 
 def partner_leads(location: str):
     """Query OpenStreetMap for nearby food banks/community facilities: NOT confirmed partners."""
