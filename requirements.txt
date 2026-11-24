@@ -1,1 +1,2 @@
 fastmcp>=3,<5
+fastapi>=0.118,<1
