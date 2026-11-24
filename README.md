@@ -28,3 +28,6 @@ python server.py
 FastMCP is optional; stdio by default, or `fastmcp run server.py:mcp --transport http --port 8000`. Production HTTP transport requires access control. All source APIs may impose usage limits.
 
 The pipeline is discovery → normalization → provenance checks → source-linked report → human decision. No autonomous business decision or LLM orchestrator is claimed.
+
+### Upstream reliability
+ZeroWaste tries a community-operated public Overpass endpoint first and the main shared Overpass instance as a bounded fallback. Both can be slow or unavailable. A zero result is not proof that no eligible partners exist; candidates still require contact and consent.
