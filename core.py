@@ -5,7 +5,8 @@ from transport import request_json, SourceError
 
 SERVICES = ["TenderPilot","ZeroWaste"]
 TED="https://api.ted.europa.eu/v3/notices/search"
-OSM="https://overpass-api.de/api/interpreter"
+OSM="https://overpass.private.coffee/api/interpreter"
+OSM_FALLBACK="https://overpass-api.de/api/interpreter"
 
 def _text(value):
     if isinstance(value, dict):
@@ -52,7 +53,12 @@ def partner_leads(location: str):
     # Restrict to a modest 3 km radius and capped output to respect public Overpass.
     q=f'[out:json][timeout:15];(nwr(around:3000,{lat:.5f},{lon:.5f})["social_facility"="food_bank"];nwr(around:3000,{lat:.5f},{lon:.5f})["amenity"="community_centre"];);out center 30;'
     # Overpass supports GET query string data; caller cannot supply arbitrary QL.
-    data=request_json(OSM,params={"data":q})
+    try:
+        data=request_json(OSM,params={"data":q})
+        overpass_source=OSM
+    except SourceError:
+        data=request_json(OSM_FALLBACK,params={"data":q})
+        overpass_source=OSM_FALLBACK
     rows=[]
     for e in data.get("elements",[])[:30]:
         tag=e.get("tags") or {}
@@ -65,7 +71,7 @@ def partner_leads(location: str):
                      "source_url":f'https://www.openstreetmap.org/{e.get("type","node")}/{e["id"]}',
                      "partner_verified":False})
     return {"project":"ZeroWaste","query":location,"candidate_facilities":rows,
-        "count":len(rows),"source":"OpenStreetMap / Overpass","stages":["Discovery: mapped facilities","Analysis: nearby locations","Verification: mapping source","Report: outreach shortlist"],
+        "count":len(rows),"source":"OpenStreetMap / Overpass", "overpass_endpoint":overpass_source,"stages":["Discovery: mapped facilities","Analysis: nearby locations","Verification: mapping source","Report: outreach shortlist"],
         "limitations":["These are mapped places, NOT verified willing food recipients.","Never arrange food transfer without partner consent and safe handling checks.","No live surplus supply, logistics or routing integration yet."]}
 
 def run(query: str, service: str="TenderPilot"):
